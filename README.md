@@ -1,10 +1,10 @@
-# HANDARI v1.3 — өөрийн Ubuntu сервер
+# HANDARI v1.4 — өөрийн Ubuntu сервер
 
 **Бүртгэл болон админ самбарын шинэчлэлт: [UPGRADE-v1.3.md](UPGRADE-v1.3.md). GitHub-д оруулах: [GITHUB.md](GITHUB.md).**
 
 **v1.2 шинэ боломж, төлбөрийн migration, өдөр тутмын шифрлэсэн SSH нөөц болон хоосон `/var/handari` хавтаснаас эхлэх заавар: [UPGRADE-v1.2.md](UPGRADE-v1.2.md).**
 
-Хандарь ХХК | Handari Brand-ийн найзын сүлжээ, борлуулалт, бүтээгдэхүүн, бараа материал, тайлан удирдах апп. **Firebase хэрэглэхгүй. Node.js 24.14+ болон SQLite** ашиглана. npm package dependency суулгах шаардлагагүй.
+Хандарь ХХК | Handari Brand-ийн найзын сүлжээ, борлуулалт, бүтээгдэхүүн, бараа материал, тайлан удирдах апп. **Firebase хэрэглэхгүй. Node.js 24.14+ болон SQLite** ашиглана. Google баталгаажуулалтад албан ёсны google-auth-library ашиглана. Анх удаа `npm ci --omit=dev --ignore-scripts` ажиллуулна. Google тохиргоо: [UPGRADE-v1.4.md](UPGRADE-v1.4.md).
 
 ## Windows дээр нээх
 
@@ -14,6 +14,7 @@ PowerShell-оос ажиллуулах өөр арга — **энэ дараал
 
 ```powershell
 cd C:\Users\Awesome\Desktop\HANDARI_v1.0
+npm ci --omit=dev --ignore-scripts
 npm run admin
 npm start
 ```

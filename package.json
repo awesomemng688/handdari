@@ -1,15 +1,20 @@
 {
   "name": "handari",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "private": true,
   "type": "module",
-  "engines": {"node": ">=24.14.0"},
+  "engines": {
+    "node": ">=24.14.0"
+  },
   "scripts": {
     "start": "node server.mjs",
     "admin": "node scripts/admin.mjs",
     "backup": "node scripts/backup.mjs",
     "backup:daily": "node scripts/backup-daily.mjs",
-    "test": "node --test test/app.test.mjs test/features.test.mjs test/accounts.test.mjs",
+    "test": "node --test test/*.test.mjs",
     "qa": "node scripts/browser-qa.mjs"
+  },
+  "dependencies": {
+    "google-auth-library": "^11.3.3"
   }
 }

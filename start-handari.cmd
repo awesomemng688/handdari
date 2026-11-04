@@ -13,6 +13,13 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
+if not exist node_modules\google-auth-library\package.json (
+  call npm ci --omit=dev --ignore-scripts
+  if errorlevel 1 (
+    pause
+    exit /b 1
+  )
+)
 node scripts/has-admin.mjs
 if errorlevel 1 (
   echo Create your HANDARI admin account:

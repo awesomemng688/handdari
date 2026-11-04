@@ -113,6 +113,7 @@ try {
   await cdp('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
   for(const name of ['home','memberCatalog','memberHistory','settings']){await navigate(name);assert.equal(await evaluate('document.documentElement.scrollWidth<=window.innerWidth'),true,'Member mobile overflow: '+name);}
   await click('[data-action=logout]');await wait("!!document.querySelector('#loginForm')");
+  assert.equal(await evaluate("!!document.querySelector('.google-disabled:disabled')"),true,'Unconfigured Google button must not promise working sign-in');
   assert.deepEqual(exceptions, []);
   console.log('Browser QA PASS: registration/approval/member account, admin users/create/policy, required password change, member-only catalog/history, previous business flows, mobile pages; no runtime exceptions. Screenshots in .qa/');
 } finally {

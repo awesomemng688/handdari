@@ -22,7 +22,7 @@ try {
   const existing = db.prepare('SELECT id FROM users WHERE email=?').get(email);
   if (existing) need(await terminal.question('Reset this user, revoke sessions, grant admin? Type RESET: ') === 'RESET', 'Үйлдэл цуцлагдлаа.');
   atomic(() => {
-    if (existing) { db.prepare("UPDATE users SET name=?,password=?,role=?,status='active',mustChangePassword=0,revision=revision+1 WHERE id=?").run(name, encoded, 'admin', existing.id); db.prepare('DELETE FROM sessions WHERE userId=?').run(existing.id); }
+    if (existing) { db.prepare("UPDATE users SET name=?,password=?,role=?,status='active',passwordEnabled=1,mustChangePassword=0,revision=revision+1 WHERE id=?").run(name, encoded, 'admin', existing.id); db.prepare('DELETE FROM sessions WHERE userId=?').run(existing.id); }
     else db.prepare('INSERT INTO users(id,email,name,password,role) VALUES(?,?,?,?,?)').run(randomUUID(), email, name, encoded, 'admin');
   });
   db.close(); console.log('Админ бүртгэл бэлэн.');

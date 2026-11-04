@@ -4,9 +4,9 @@ from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
 from hashlib import sha256
 
 root = Path(__file__).resolve().parent.parent
-output = root / 'handari-v1.3.zip'
+output = root / 'handari-v1.4.zip'
 files = []
-for name in ['package.json', 'server.mjs', 'index.html', 'start-handari.cmd', 'README.md', 'UPGRADE-v1.2.md', 'UPGRADE-v1.3.md', 'GITHUB.md', '.gitignore', '.gitattributes']:
+for name in ['package-lock.json', 'UPGRADE-v1.4.md', 'package.json', 'server.mjs', 'index.html', 'start-handari.cmd', 'README.md', 'UPGRADE-v1.2.md', 'UPGRADE-v1.3.md', 'GITHUB.md', '.gitignore', '.gitattributes']:
     files.append(root / name)
 for name in ['lib', 'public', 'scripts', 'deploy', 'test']:
     files.extend(p for p in (root / name).rglob('*') if p.is_file() and not p.is_symlink())

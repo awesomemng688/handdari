@@ -6,17 +6,19 @@ import { randomUUID } from 'node:crypto';
 import { openStore, need, Problem } from './lib/store.mjs';
 import { verifyPassword, hashPassword, sessionToken, digest } from './lib/auth.mjs';
 import { createAccounts } from './lib/accounts.mjs';
+import { createGoogleAuth } from './lib/google.mjs';
 const root = fileURLToPath(new URL('.', import.meta.url));
 const dummyHash = await hashPassword('not-a-real-password-dummy');
 const assets = {
-  '/': 'index.html', '/index.html': 'index.html', '/app.js': 'app.js', '/accounts.js': 'accounts.js', '/features.js': 'features.js', '/styles.css': 'styles.css',
+  '/': 'index.html', '/index.html': 'index.html', '/app.js': 'app.js', '/accounts.js': 'accounts.js', '/google.js': 'google.js', '/features.js': 'features.js', '/styles.css': 'styles.css',
   '/sw.js': 'sw.js', '/manifest.webmanifest': 'manifest.webmanifest', '/icon.svg': 'icon.svg',
   '/icon-192.png': 'icon-192.png', '/icon-512.png': 'icon-512.png',
   '/assets/handari_logo.png': 'assets/handari_logo.png', '/assets/facebook_qr.png': 'assets/facebook_qr.png'
 };
-export function createApp({ dbPath = process.env.DB_PATH || join(root, 'data/handari.sqlite'), origin = process.env.APP_ORIGIN || 'http://127.0.0.1:3100' } = {}) {
+export function createApp({ dbPath = process.env.DB_PATH || join(root, 'data/handari.sqlite'), origin = process.env.APP_ORIGIN || 'http://127.0.0.1:3100', googleClientId = process.env.GOOGLE_CLIENT_ID || '', verifyGoogleToken } = {}) {
   const store = openStore(dbPath), { db } = store, rates = new Map();
   const accounts = createAccounts(store);
+  const google = createGoogleAuth(store,{clientId:googleClientId,verifyToken:verifyGoogleToken});
   let credentialJobs = 0;
   async function credentialWork(fn) { need(credentialJobs < 4,'Нэвтрэх үйлчилгээ ачаалалтай байна. Түр хүлээгээд дахин оролдоно уу.',503); credentialJobs++; try { return await fn(); } finally { credentialJobs--; } }
   function limit(req, purpose, max = 15, duration = 900000) {
@@ -33,7 +35,7 @@ export function createApp({ dbPath = process.env.DB_PATH || join(root, 'data/han
   const tokenOf = req => /handari_session=([\w-]+)/.exec(req.headers.cookie || '')?.[1];
   function getUser(req) {
     const token = tokenOf(req);
-    return token ? db.prepare("SELECT u.id,u.email,u.name,u.role,u.status,u.phone,u.friendId,u.mustChangePassword FROM sessions s JOIN users u ON u.id=s.userId WHERE s.token=? AND s.expires>? AND u.status='active'").get(digest(token), Date.now()) : null;
+    return token ? db.prepare("SELECT u.id,u.email,u.name,u.role,u.status,u.phone,u.friendId,u.mustChangePassword,u.passwordEnabled FROM sessions s JOIN users u ON u.id=s.userId WHERE s.token=? AND s.expires>? AND u.status='active'").get(digest(token), Date.now()) : null;
   }
   async function body(req) {
     need(req.headers['content-type']?.split(';')[0] === 'application/json', 'JSON өгөгдөл шаардлагатай.', 415);
@@ -57,12 +59,31 @@ export function createApp({ dbPath = process.env.DB_PATH || join(root, 'data/han
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'same-origin');
     res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' https: data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'");
+    res.setHeader('Cross-Origin-Opener-Policy','same-origin-allow-popups');
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' https://accounts.google.com/gsi/style; img-src 'self' https: data:; connect-src 'self' https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'");
     try {
       const path = new URL(req.url, origin).pathname;
       if (path.startsWith('/api/')) {
         need(['GET', 'POST'].includes(req.method), 'Хүсэлтийн арга зөвшөөрөгдөөгүй.', 405);
         if (req.method === 'POST') need(req.headers.origin === origin, 'Хүсэлтийн эх үүсвэр зөвшөөрөгдөөгүй. Хаягаа шалгана уу.', 403);
+        if (path === '/api/auth/config' && req.method === 'GET') return reply(res,200,{google:google.config()});
+        if (path === '/api/auth/google/nonce' && req.method === 'GET') {
+          limit(req,'google-init',30);
+          const intent=new URL(req.url,origin).searchParams.get('intent')||'signin',state=google.issue(intent,getUser(req));
+          res.setHeader('Set-Cookie',`handari_google=${state.token}; Path=/api/auth/google; HttpOnly; SameSite=Strict; Max-Age=600${origin.startsWith('https://')?'; Secure':''}`);
+          return reply(res,200,{nonce:state.nonce});
+        }
+        if (path === '/api/auth/google' && req.method === 'POST') {
+          limit(req,'google-login',15);const input=await body(req),nonceCookie=/handari_google=([\w-]+)/.exec(req.headers.cookie||'')?.[1];
+          const result=await credentialWork(()=>google.signin(input,nonceCookie,()=>accounts.policy().enabled));
+          if(result.pending)return reply(res,202,result);
+          const token=sessionToken(),now=Date.now();
+          db.prepare('DELETE FROM sessions WHERE expires<=?').run(now);
+          db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(digest(token),result.userId,now+604800000);
+          db.prepare('UPDATE users SET lastLoginAt=? WHERE id=?').run(new Date().toISOString(),result.userId);
+          res.setHeader('Set-Cookie',cookie(token));
+          return reply(res,200,{user:getUser({...req,headers:{...req.headers,cookie:'handari_session='+token}})});
+        }
         if (path === '/api/registration' && req.method === 'GET') return reply(res,200,accounts.policy());
         if (path === '/api/register' && req.method === 'POST') {
           limit(req,'register',5,3600000);const input=await body(req);
@@ -79,7 +100,7 @@ export function createApp({ dbPath = process.env.DB_PATH || join(root, 'data/han
           need(typeof input.email === 'string' && input.email.length < 255, 'Имэйл хаяг оруулна уу.');
           const u = db.prepare('SELECT * FROM users WHERE email=?').get(input.email.trim().toLowerCase());
           const valid = await credentialWork(()=>verifyPassword(input.password, u?.password || dummyHash));
-          need(u && valid && db.prepare('SELECT password FROM users WHERE id=?').get(u.id)?.password === u.password, 'Имэйл эсвэл нууц үг буруу байна.', 401);
+          need(u && u.passwordEnabled && valid && db.prepare('SELECT password FROM users WHERE id=?').get(u.id)?.password === u.password, 'Имэйл эсвэл нууц үг буруу байна.', 401);
           const current=db.prepare('SELECT status FROM users WHERE id=?').get(u.id);
           need(current.status==='active',current.status==='pending'?'Таны бүртгэл админы зөвшөөрөл хүлээж байна.':'Таны бүртгэлийг түр түгжсэн байна. Админтай холбогдоно уу.',403);
           const token = sessionToken();
@@ -100,10 +121,16 @@ export function createApp({ dbPath = process.env.DB_PATH || join(root, 'data/han
           const b = await body(req), u = db.prepare('SELECT password FROM users WHERE id=?').get(user.id);
           need(await verifyPassword(b.current, u.password), 'Одоогийн нууц үг буруу байна.');
           const hash = await hashPassword(b.password);
-          store.atomic(() => { need(getUser(req) && db.prepare('SELECT password FROM users WHERE id=?').get(user.id)?.password===u.password,'Бүртгэл өөрчлөгдсөн байна. Дахин нэвтэрнэ үү.',401); db.prepare('UPDATE users SET password=?,mustChangePassword=0,revision=revision+1 WHERE id=?').run(hash, user.id); db.prepare('DELETE FROM sessions WHERE userId=?').run(user.id); });
+          store.atomic(() => { need(getUser(req) && db.prepare('SELECT password FROM users WHERE id=?').get(user.id)?.password===u.password,'Бүртгэл өөрчлөгдсөн байна. Дахин нэвтэрнэ үү.',401); db.prepare('UPDATE users SET password=?,passwordEnabled=1,mustChangePassword=0,revision=revision+1 WHERE id=?').run(hash, user.id); db.prepare('DELETE FROM sessions WHERE userId=?').run(user.id); });
           res.setHeader('Set-Cookie', cookie('', 0)); return reply(res, 200, { ok: true });
         }
         need(!user.mustChangePassword,'Эхлээд анхны нууц үгээ шинэчилнэ үү.',403);
+        if(path==='/api/auth/providers' && req.method==='GET')return reply(res,200,google.providers(user));
+        if(path==='/api/auth/google/link' && req.method==='POST'){
+          limit(req,'google-link',10);const input=await body(req),fresh=getUser(req);need(fresh,'Дахин нэвтэрнэ үү.',401);
+          const nonceCookie=/handari_google=([\w-]+)/.exec(req.headers.cookie||'')?.[1];
+          return reply(res,200,await credentialWork(()=>google.link(fresh,input,nonceCookie)));
+        }
         if(path==='/api/member' && req.method==='GET') return reply(res,200,accounts.member(user));
         if(path==='/api/profile' && req.method==='POST') { const input=await body(req);need(getUser(req),'Дахин нэвтэрнэ үү.',401);return reply(res,200,accounts.profile(user.id,input)); }
         need(user.role === 'admin', 'Энэ хэсгийг зөвхөн админ үзнэ.', 403);

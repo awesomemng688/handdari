@@ -46,7 +46,7 @@ test('registration cannot grant privileges; approval, friend binding, member dat
   const member=(await call('member',null,cookie)).body;assert.equal(member.products.length,1);assert.equal(member.products[0].name,p.name);assert.equal(member.sales.length,1);assert.equal(member.sales[0].paid,50);
   for(const key of ['cost','profit','costTotal','note','actor','buyerId'])assert.equal(key in member.sales[0],false);
   for(const key of ['cost','stock','threshold'])assert.equal(key in member.products[0],false);
-  result=await call('admin/users',null,owner);assert.equal(JSON.stringify(result.body).includes('password'),false);u=result.body.users.find(row=>row.id===u.id);
+  result=await call('admin/users',null,owner);assert.ok(result.body.users.every(row=>!('password' in row)));u=result.body.users.find(row=>row.id===u.id);
   const update={id:u.id,name:u.name,email:u.email,phone:u.phone,friendId:u.friendId,role:'developer',status:'suspended',revision:u.revision};
   assert.equal((await call('admin/users/update',update,owner)).status,200);assert.equal((await call('me',null,cookie)).status,401);assert.equal((await call('login',{email:u.email,password})).status,403);
   assert.equal((await call('admin/users/update',update,owner)).status,409);
@@ -83,7 +83,7 @@ test('v1.2 five-column users migrate without changing password, role, session or
   const dir=mkdtempSync(join(tmpdir(),'handari-users-')),path=join(dir,'old.sqlite'),hash=await hashPassword(password),old=new DatabaseSync(path);
   old.exec('CREATE TABLE users(id TEXT PRIMARY KEY,email TEXT NOT NULL UNIQUE,name TEXT NOT NULL,password TEXT NOT NULL,role TEXT NOT NULL);PRAGMA user_version=2;');
   old.prepare('INSERT INTO users VALUES(?,?,?,?,?)').run('old-owner','old@test.mn','Owner',hash,'admin');old.close();const s=openStore(path);
-  try{const u=s.db.prepare('SELECT * FROM users WHERE id=?').get('old-owner');assert.equal(u.password,hash);assert.equal(u.role,'admin');assert.equal(u.status,'active');assert.equal(u.mustChangePassword,0);assert.equal(u.createdAt,'');assert.equal(s.db.prepare('PRAGMA user_version').get().user_version,3);}
+  try{const u=s.db.prepare('SELECT * FROM users WHERE id=?').get('old-owner');assert.equal(u.password,hash);assert.equal(u.role,'admin');assert.equal(u.status,'active');assert.equal(u.mustChangePassword,0);assert.equal(u.createdAt,'');assert.equal(s.db.prepare('PRAGMA user_version').get().user_version,4);}
   finally{s.db.close();for(const file of readdirSync(dir))unlinkSync(join(dir,file));rmdirSync(dir);}
 });
 

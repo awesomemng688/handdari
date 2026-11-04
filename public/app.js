@@ -1,5 +1,6 @@
 import { createFeatures } from './features.js';
 import { createAccountUI } from './accounts.js';
+import { createGoogleUI } from './google.js';
 const $ = selector => document.querySelector(selector);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const money = value => value === null ? '—' : new Intl.NumberFormat('mn-MN', { maximumFractionDigits: 0 }).format(value) + ' ₮';
@@ -159,7 +160,7 @@ function facebook() {
 }
 function baseSettings() {
   return heading('Миний булан', 'Таны бүртгэл, мэдээлэл болон системийн тохиргоо.') +
-    `<div class="profile-grid">${panel('Миний бүртгэл', `<div class="panel-body copy"><span class="avatar">${esc(user?.name?.slice(0, 1) || 'H')}</span><h3>${esc(user?.name || 'Та нэвтрээгүй байна')}</h3><p>${esc(user?.email || 'Мэдээлэлтэйгээ ажиллахын тулд нэвтэрнэ үү.')}</p>${user ? `<p>Эрх: ${user.role === 'admin' ? 'Компанийн удирдлага' : esc(types[user.role])}</p>${action('password', 'Нууц үг солих', 'secondary', 'settings')} ${action('logout', 'Гарах', 'secondary', 'arrow')}` : action('login', 'Нэвтрэх', '', 'arrow')}<h3>Утсанд суулгах</h3><p>Android Chrome → цэс → Нүүр дэлгэцэд нэмэх. HTTPS холболт шаардлагатай. Холболтгүй үед зөвхөн аппын бүрхүүл нээгдэнэ.</p>${action('install', 'Апп суулгах', 'secondary', 'down')}<h3>Найзуудын урилга</h3><p>Шинэ хэрэглэгч бүртгүүлэх боломжтой. Админ самбараас бүртгэлийг хянаж батална. Gmail урилга, Atomy спонсорын баталгаажуулалт ороогүй.</p></div>`)}${panel('Мэдээлэл ба түүх', `<div class="panel-body copy"><h3>Хуучин мэдээллээ оруулах</h3><p>Хуучин Firestore-ийн friends / sales өгөгдлийг JSON файл болгон экспортолсны дараа импортолно. Найзын мод хадгалагдана. Огноогүй хуучин борлуулалт тусдаа архивт орно.</p>${action('importLegacy', 'JSON файл импортлох', 'secondary', 'down')}<h3>Системийн үйлдлийн түүх</h3>${ready() && data.audit.length ? `<div class="audit-list">${data.audit.slice(0, 7).map(a => `<div class="audit-item"><span>${esc(actionLabels[a.kind] || a.kind)}</span><time>${esc(a.createdAt.slice(0, 10))}</time></div>`).join('')}</div>` : '<p>Үйлдлийн түүх ачаалагдаагүй эсвэл хоосон байна.</p>'}<h3>Таны сервер, таны мэдээлэл</h3><p>SQLite санд хадгална. Бүрэн нөөцлөх, сэргээх болон Ubuntu-д суулгах заавар README.md файлд бий. CSV нь бүрэн нөөц хуулбар биш.</p><p class="attachment-note">HANDARI v1.3 · Бүртгэл, админ удирдлага</p></div>`)}</div>`;
+    `<div class="profile-grid">${panel('Миний бүртгэл', `<div class="panel-body copy"><span class="avatar">${esc(user?.name?.slice(0, 1) || 'H')}</span><h3>${esc(user?.name || 'Та нэвтрээгүй байна')}</h3><p>${esc(user?.email || 'Мэдээлэлтэйгээ ажиллахын тулд нэвтэрнэ үү.')}</p>${user ? `<p>Эрх: ${user.role === 'admin' ? 'Компанийн удирдлага' : esc(types[user.role])}</p>${action('password', 'Нууц үг солих', 'secondary', 'settings')} ${action('logout', 'Гарах', 'secondary', 'arrow')}` : action('login', 'Нэвтрэх', '', 'arrow')}<h3>Утсанд суулгах</h3><p>Android Chrome → цэс → Нүүр дэлгэцэд нэмэх. HTTPS холболт шаардлагатай. Холболтгүй үед зөвхөн аппын бүрхүүл нээгдэнэ.</p>${action('install', 'Апп суулгах', 'secondary', 'down')}<h3>Найзуудын урилга</h3><p>Шинэ хэрэглэгч бүртгүүлэх боломжтой. Админ самбараас бүртгэлийг хянаж батална. Gmail урилга, Atomy спонсорын баталгаажуулалт ороогүй.</p></div>`)}${panel('Мэдээлэл ба түүх', `<div class="panel-body copy"><h3>Хуучин мэдээллээ оруулах</h3><p>Хуучин Firestore-ийн friends / sales өгөгдлийг JSON файл болгон экспортолсны дараа импортолно. Найзын мод хадгалагдана. Огноогүй хуучин борлуулалт тусдаа архивт орно.</p>${action('importLegacy', 'JSON файл импортлох', 'secondary', 'down')}<h3>Системийн үйлдлийн түүх</h3>${ready() && data.audit.length ? `<div class="audit-list">${data.audit.slice(0, 7).map(a => `<div class="audit-item"><span>${esc(actionLabels[a.kind] || a.kind)}</span><time>${esc(a.createdAt.slice(0, 10))}</time></div>`).join('')}</div>` : '<p>Үйлдлийн түүх ачаалагдаагүй эсвэл хоосон байна.</p>'}<h3>Таны сервер, таны мэдээлэл</h3><p>SQLite санд хадгална. Бүрэн нөөцлөх, сэргээх болон Ubuntu-д суулгах заавар README.md файлд бий. CSV нь бүрэн нөөц хуулбар биш.</p><p class="attachment-note">HANDARI v1.4 · Бүртгэл, админ удирдлага</p></div>`)}</div>`;
 }
 function settings() { return user && (user.role!=='admin'||user.mustChangePassword) ? accountUI.memberHome() : baseSettings() + `<div class="section-space">${feature.backupStatus()}</div>`; }
 function login() {
@@ -185,6 +186,7 @@ function render() {
   const renderPage=user?.mustChangePassword || (user && user.role!=='admin'&&!memberAllowed.includes(current)) ? accountUI.memberHome : (pages[current] || home);
   $('#content').innerHTML = notice + renderPage();
   for (const bar of document.querySelectorAll('[data-height]')) bar.style.height = bar.dataset.height + '%';
+  googleUI.mount(current);
 }
 
 const field = (name, label, type = 'text', value = '', options = null, required = true, wide = false) => ({ name, label, type, value, options, required, wide });
@@ -283,13 +285,14 @@ const actions = {
 };
 const feature = createFeatures({ $, esc, money, count, day, sum, icon, action, heading, panel, table, empty, field, openForm, saveAction, api, toast, requireAdmin, csv, actions, stat, ready, render, refresh, getData: () => data });
 const accountUI = createAccountUI({$,esc,money,day,count,sum,heading,panel,table,empty,stat,field,openForm,api,toast,actions,render,refresh,requireAdmin,ready,getData:()=>data,getUser:()=>user,setUser:value=>user=value});
+const googleUI=createGoogleUI({$,api,toast,render,openForm,field,refresh,getUser:()=>user,onUser:value=>{generation++;user=value;data=blank();accountUI.reset();loaded=false;location.hash='home';}});
 function clearSession() { generation++; user = null; data = blank(); accountUI.reset(); loaded = false; loading = false; error = ''; location.hash = 'login'; render(); }
 document.addEventListener('click', async event => {
   const target = event.target.closest('[data-action],[data-edit-friend],[data-delete-friend],[data-edit-product],[data-cancel-sale],[data-mode]');
   if (!target || working) return;
   try {
     if (target.dataset.mode) { friendView = target.dataset.mode; render(); return; }
-    if (target.dataset.action) { if (actions[target.dataset.action]) await actions[target.dataset.action](); else if(!accountUI.dispatch(target.dataset.action)) await feature.dispatch(target.dataset.action); return; }
+    if (target.dataset.action) { if(target.dataset.action==='googleLink')await googleUI.link(); else if (actions[target.dataset.action]) await actions[target.dataset.action](); else if(!accountUI.dispatch(target.dataset.action)) await feature.dispatch(target.dataset.action); return; }
     if (!requireAdmin()) return;
     if (target.dataset.editFriend) friendForm(target.dataset.editFriend);
     if (target.dataset.editProduct) productForm(target.dataset.editProduct);
@@ -361,6 +364,7 @@ if ('serviceWorker' in navigator) {
   let reloading = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController && !reloading) { reloading = true; location.reload(); } });
 }
+await googleUI.load();
 try { accountUI.setPolicy(await api('registration')); } catch {}
 try { user = (await api('me')).user; } catch (e) { if (e.message !== 'Нэвтэрнэ үү.') error = e.message; }
 booting = false; await refresh(); render(); if (!navigator.onLine) network(); document.body.dataset.ready = 'true';
