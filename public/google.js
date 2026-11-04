@@ -25,7 +25,14 @@ export function createGoogleUI(ctx) {
   async function signin(credential,root){
     const requestedRole=$('#registerForm')?.elements.requestedRole.value||'customer';
     const result=await api('auth/google',{credential,requestedRole});
-    if(result.pending){root.querySelector('.google-auth-status').textContent=result.message;toast(result.message);return;}
+    if(result.pending){
+      root.querySelector('.google-button-host').hidden=true;
+      root.querySelector('.auth-separator').hidden=true;
+      root.querySelector('.google-auth-status').textContent=result.message;
+      const form=$('#registerForm');if(form){form.reset();form.hidden=true;}
+      const next=document.createElement('a');next.className='button secondary';next.href='#login';next.textContent='??????? ?????? ?';root.append(next);
+      toast(result.message);return;
+    }
     ctx.onUser(result.user);await ctx.refresh();ctx.render();
   }
   function mount(page){
