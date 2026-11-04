@@ -1,0 +1,28 @@
+[Unit]
+Description=HANDARI business application
+After=network.target
+
+[Service]
+Type=simple
+User=handari
+Group=handari
+WorkingDirectory=/var/handari
+Environment=NODE_ENV=production
+Environment=HOST=127.0.0.1
+Environment=PORT=3100
+Environment=DB_PATH=/var/lib/handari/handari.sqlite
+Environment=APP_ORIGIN=https://handari.example.com
+Environment=TRUST_PROXY=1
+ExecStart=/usr/bin/node /var/handari/server.mjs
+Restart=on-failure
+RestartSec=5
+StateDirectory=handari
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/handari
+
+[Install]
+WantedBy=multi-user.target

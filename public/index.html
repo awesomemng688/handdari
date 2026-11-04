@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="mn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#5b316c">
+  <meta name="description" content="Хандарь ХХК — найзууд, борлуулалт, бараа материалын нэгдсэн удирдлага">
+  <title>HANDARI — Бизнесийн тань орон зай</title>
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <div id="network" class="system-banner" hidden>Холболт тасарлаа. Мэдээлэл харах, хадгалахад серверийн холболт хэрэгтэй.</div>
+  <div id="update" class="system-banner" hidden>Шинэ хувилбар бэлэн. <button id="updateButton">Шинэчлэх</button></div>
+  <div class="layout">
+    <aside id="sidebar">
+      <a class="brand" href="#home"><span class="brand-emblem">H<i>✧</i></span><span>HANDARI<small>ХАНДАРЬ ХХК · HANDARI BRAND</small></span></a>
+      <div class="nav-caption">ТАНЫ БИЗНЕСИЙН ОРОН ЗАЙ</div>
+      <nav id="nav" aria-label="Үндсэн цэс"></nav>
+      <div class="side-note"><span class="gold-star">✧</span><p>Хамтдаа бүтээж,<br>хамтдаа өснө.</p><small>Найз бүр үнэ цэнтэй.</small></div>
+      <div class="server-status"><span></span> Өөрийн сервер <small>v1.3</small></div>
+    </aside>
+    <div class="main-shell">
+      <header>
+        <button id="menu" class="icon-button mobile-menu" aria-label="Цэс нээх" aria-expanded="false">☰</button>
+        <div class="breadcrumb">Миний HANDARI <span>/</span> <strong id="crumb">Нүүр</strong></div>
+        <div class="header-actions"><span id="today"></span><button id="notificationsButton" class="icon-button notification-button" aria-label="Нөөцийн мэдэгдэл"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4"/></svg><span id="notificationCount" hidden></span></button><button id="reload" class="icon-button" aria-label="Мэдээлэл шинэчлэх">↻</button><span class="header-divider"></span><button id="account" class="account"><span class="avatar">H</span><span id="accountLabel">Нэвтрэх</span></button></div>
+      </header>
+      <main id="content" tabindex="-1"><div class="boot"><span class="brand-emblem">H<i>✧</i></span><p>HANDARI ачаалж байна…</p></div></main>
+      <footer><div>© <span id="year"></span> Хандарь ХХК · Handari Brand</div><div>Atomy бүтээгдэхүүний бие даасан борлуулагч</div></footer>
+    </div>
+  </div>
+  <nav id="bottomNav" class="bottom-nav" aria-label="Гар утасны цэс"></nav>
+  <button id="overlay" class="nav-overlay" aria-label="Цэс хаах" hidden></button>
+  <dialog id="modal" aria-labelledby="modalTitle">
+    <div class="dialog-heading"><div><span class="eyebrow">HANDARI · ШИНЭ БОЛОМЖ</span><h2 id="modalTitle"></h2></div><button id="closeModal" class="icon-button" aria-label="Хаах">✕</button></div>
+    <form id="form"><div id="fields" class="form-grid"></div><p id="formError" role="alert" class="error"></p><div class="dialog-actions"><button type="button" id="cancelModal" class="button secondary">Болих</button><button id="save" class="button" type="submit">Хадгалах</button></div></form>
+  </dialog>
+  <input id="importFile" type="file" accept="application/json,.json" hidden>
+  <div id="toast" role="status" hidden></div>
+</body>
+</html>

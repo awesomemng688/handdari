@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily HANDARI backup at 03:00 Ulaanbaatar
+
+[Timer]
+OnCalendar=*-*-* 03:00:00 Asia/Ulaanbaatar
+Persistent=true
+RandomizedDelaySec=300
+Unit=handari-backup.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,18 @@
+[Unit]
+Description=HANDARI encrypted daily backup and SFTP copy
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=handari
+Group=handari
+WorkingDirectory=/var/handari
+EnvironmentFile=/etc/handari/backup.env
+ExecStart=/usr/bin/node /var/handari/scripts/backup-daily.mjs
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/handari /var/backups/handari
