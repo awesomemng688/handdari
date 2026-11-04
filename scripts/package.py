@@ -6,8 +6,8 @@ from hashlib import sha256
 root = Path(__file__).resolve().parent.parent
 output = root / 'handari-v1.4.zip'
 files = []
-for name in ['package-lock.json', 'UPGRADE-v1.4.md', 'package.json', 'server.mjs', 'index.html', 'start-handari.cmd', 'README.md', 'UPGRADE-v1.2.md', 'UPGRADE-v1.3.md', 'GITHUB.md', '.gitignore', '.gitattributes']:
-    files.append(root / name)
+for name in ['REGISTRATION-v1.4.2.md', 'package-lock.json', 'UPGRADE-v1.4.md', 'package.json', 'server.mjs', 'index.html', 'start-handari.cmd', 'README.md', 'UPGRADE-v1.2.md', 'UPGRADE-v1.3.md', 'GITHUB.md', '.gitignore', '.gitattributes']:
+    if (root / name).is_file(): files.append(root / name)
 for name in ['lib', 'public', 'scripts', 'deploy', 'test']:
     files.extend(p for p in (root / name).rglob('*') if p.is_file() and not p.is_symlink())
 files = sorted(set(files))

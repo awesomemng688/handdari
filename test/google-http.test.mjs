@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createApp} from '../server.mjs';
-test('Google HTTP flow binds a cookie nonce, blocks foreign origins, approves before session creation, and rejects replay',async t=>{
+test('Google HTTP flow binds a cookie nonce, blocks foreign origins, creates a session immediately, and rejects replay',async t=>{
   let payload;
   const clientId='test.apps.googleusercontent.com',app=createApp({dbPath:':memory:',googleClientId:clientId,verifyGoogleToken:async()=>payload});
   await new Promise(resolve=>app.server.listen(0,'127.0.0.1',resolve));
@@ -16,8 +16,7 @@ test('Google HTTP flow binds a cookie nonce, blocks foreign origins, approves be
   let cookie=await start();
   assert.equal((await call('auth/google',{credential:'signed'},cookie,'https://evil.example')).status,403);
   assert.equal((await call('auth/google',{credential:'signed'})).status,403);
-  let result=await call('auth/google',{credential:'signed'},cookie);assert.equal(result.status,202);assert.equal(result.cookie,undefined);
-  app.store.db.prepare("UPDATE users SET status='active' WHERE email='http@example.com'").run();
+  let result=await call('auth/google',{credential:'signed'},cookie);assert.equal(result.status,200);assert.ok(result.cookie);assert.equal((await call('me',null,result.cookie)).status,200);
   cookie=await start();result=await call('auth/google',{credential:'signed'},cookie);
   assert.equal(result.status,200);assert.equal(result.body.user.role,'customer');assert.equal(result.body.user.passwordEnabled,0);
   assert.equal((await call('me',null,result.cookie)).status,200);

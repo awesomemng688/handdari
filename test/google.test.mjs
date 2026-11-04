@@ -4,7 +4,7 @@ import { openStore } from '../lib/store.mjs';
 import { createGoogleAuth } from '../lib/google.mjs';
 import { hashPassword } from '../lib/auth.mjs';
 const clientId='test.apps.googleusercontent.com';
-test('Google requires nonce, verified audience and email; new accounts await approval and cannot elevate privileges',async t=>{
+test('Google requires nonce, verified audience and email; new accounts activate immediately and cannot elevate privileges',async t=>{
   const store=openStore(':memory:');t.after(()=>store.db.close());
   let payload;
   const auth=createGoogleAuth(store,{clientId,verifyToken:async()=>payload});
@@ -12,11 +12,10 @@ test('Google requires nonce, verified audience and email; new accounts await app
   let token=start();payload.aud='attacker';await assert.rejects(auth.signin({credential:'signed'},token,()=>true),{status:401});
   token=start();payload.email_verified=false;await assert.rejects(auth.signin({credential:'signed'},token,()=>true),{status:401});
   token=start();payload.nonce='wrong';await assert.rejects(auth.signin({credential:'signed'},token,()=>true),{status:401});
-  token=start();assert.equal((await auth.signin({credential:'signed',role:'admin',requestedRole:'admin'},token,()=>true)).pending,true);
+  token=start();assert.equal((await auth.signin({credential:'signed',role:'admin',requestedRole:'admin'},token,()=>true)).pending,false);
   const user=store.db.prepare('SELECT * FROM users WHERE email=?').get(payload.email);
-  assert.equal(user.role,'customer');assert.equal(user.status,'pending');assert.equal(user.passwordEnabled,0);
+  assert.equal(user.role,'customer');assert.equal(user.status,'active');assert.equal(user.passwordEnabled,0);
   await assert.rejects(auth.signin({credential:'signed'},token,()=>true),{status:403});
-  store.db.prepare("UPDATE users SET status='active' WHERE id=?").run(user.id);
   token=start();assert.equal((await auth.signin({credential:'signed'},token,()=>false)).userId,user.id);
   store.db.prepare("UPDATE users SET status='suspended' WHERE id=?").run(user.id);
   token=start();await assert.rejects(auth.signin({credential:'signed'},token,()=>true),{status:403});

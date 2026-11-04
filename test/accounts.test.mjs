@@ -27,8 +27,8 @@ test('registration cannot grant privileges; approval, friend binding, member dat
   const {s,call,owner}=await fixture(t);
   assert.equal((await call('admin/users')).status,401);
   assert.equal((await call('register',{...registration(),role:'admin',status:'active',friendId:'victim'})).status,201);
-  let u=s.db.prepare('SELECT * FROM users WHERE email=?').get('friend@test.mn');assert.equal(u.role,'customer');assert.equal(u.status,'pending');assert.equal(u.friendId,'');
-  assert.equal((await call('login',{email:u.email,password})).status,403);
+  let u=s.db.prepare('SELECT * FROM users WHERE email=?').get('friend@test.mn');assert.equal(u.role,'customer');assert.equal(u.status,'active');assert.equal(u.friendId,'');
+  assert.equal((await call('login',{email:u.email,password})).status,200);
   assert.equal((await call('register',registration('evil@test.mn'),'','https://evil.example')).status,403);
   const f={id:'friend-1',surname:'Тест',name:'Найз',phone:'99112233',date:'2026-11-04',type:'customer',parentId:'',member:'',address:'',note:'',status:'active'};
   s.mutate({id:'owner',role:'admin'},'friend',op(f));
@@ -83,7 +83,7 @@ test('v1.2 five-column users migrate without changing password, role, session or
   const dir=mkdtempSync(join(tmpdir(),'handari-users-')),path=join(dir,'old.sqlite'),hash=await hashPassword(password),old=new DatabaseSync(path);
   old.exec('CREATE TABLE users(id TEXT PRIMARY KEY,email TEXT NOT NULL UNIQUE,name TEXT NOT NULL,password TEXT NOT NULL,role TEXT NOT NULL);PRAGMA user_version=2;');
   old.prepare('INSERT INTO users VALUES(?,?,?,?,?)').run('old-owner','old@test.mn','Owner',hash,'admin');old.close();const s=openStore(path);
-  try{const u=s.db.prepare('SELECT * FROM users WHERE id=?').get('old-owner');assert.equal(u.password,hash);assert.equal(u.role,'admin');assert.equal(u.status,'active');assert.equal(u.mustChangePassword,0);assert.equal(u.createdAt,'');assert.equal(s.db.prepare('PRAGMA user_version').get().user_version,4);}
+  try{const u=s.db.prepare('SELECT * FROM users WHERE id=?').get('old-owner');assert.equal(u.password,hash);assert.equal(u.role,'admin');assert.equal(u.status,'active');assert.equal(u.mustChangePassword,0);assert.equal(u.createdAt,'');assert.equal(s.db.prepare('PRAGMA user_version').get().user_version,5);}
   finally{s.db.close();for(const file of readdirSync(dir))unlinkSync(join(dir,file));rmdirSync(dir);}
 });
 

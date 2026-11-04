@@ -18,7 +18,7 @@ id handari >/dev/null
 "$handari_node" --check "$handari_source/server.mjs"
 "$handari_node" --check "$handari_source/public/app.js"
 "$handari_node" --check "$handari_source/public/accounts.js"
-"$handari_node" --test "$handari_source/test/app.test.mjs" "$handari_source/test/features.test.mjs" "$handari_source/test/accounts.test.mjs" "$handari_source/test/google.test.mjs" "$handari_source/test/google-http.test.mjs"
+"$handari_node" --test "$handari_source/test/app.test.mjs" "$handari_source/test/features.test.mjs" "$handari_source/test/accounts.test.mjs" "$handari_source/test/google.test.mjs" "$handari_source/test/google-http.test.mjs" "$handari_source/test/registration-migration.test.mjs"
 
 handari_backup=/var/backups/handari/upgrades/$(date -u +%Y%m%dT%H%M%SZ)-$$
 install -d -m 700 "$handari_backup"
@@ -36,7 +36,8 @@ for handari_dir in lib public scripts deploy test node_modules; do
   find "$handari_target/$handari_dir" -type d -exec chown root:handari {} + -exec chmod 750 {} +
   find "$handari_target/$handari_dir" -type f -exec chown root:handari {} + -exec chmod 640 {} +
 done
-for handari_file in server.mjs package.json package-lock.json index.html start-handari.cmd README.md UPGRADE-v1.2.md UPGRADE-v1.3.md UPGRADE-v1.4.md GITHUB.md .gitignore; do
+for handari_file in server.mjs package.json package-lock.json index.html start-handari.cmd README.md UPGRADE-v1.2.md UPGRADE-v1.3.md UPGRADE-v1.4.md REGISTRATION-v1.4.2.md GITHUB.md .gitignore; do
+  [ -f "$handari_source/$handari_file" ] || continue
   install -o root -g handari -m 640 "$handari_source/$handari_file" "$handari_target/$handari_file"
 done
 chown root:handari "$handari_target"

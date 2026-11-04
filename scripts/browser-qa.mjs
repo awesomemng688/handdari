@@ -51,6 +51,7 @@ try {
   await fill({name:'Шинэ гишүүн',email:'qa-member@example.test',phone:'99001122',requestedRole:'customer',password,confirmPassword:password},'#registerForm');
   await evaluate("document.querySelector('#registerForm').elements.consent.checked=true;document.querySelector('#registerForm').requestSubmit()");
   await wait("document.querySelector('#registrationSuccess')?.hidden===false");await screenshot('registration');
+  assert.equal(app.store.db.prepare("SELECT status FROM users WHERE email='qa-member@example.test'").get().status,'active','Signup must activate immediately');
   await navigate('login');
   await fill({ email: 'qa@example.test', password }, '#loginForm'); await evaluate("document.querySelector('#loginForm').requestSubmit()");
   await wait("document.querySelector('#accountLabel')?.textContent==='Хандарь' && document.querySelector('.stat-value')?.textContent!=='—'");
