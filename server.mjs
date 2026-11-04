@@ -7,18 +7,20 @@ import { openStore, need, Problem } from './lib/store.mjs';
 import { verifyPassword, hashPassword, sessionToken, digest } from './lib/auth.mjs';
 import { createAccounts } from './lib/accounts.mjs';
 import { createGoogleAuth } from './lib/google.mjs';
+import { createRecovery } from './lib/recovery.mjs';
 const root = fileURLToPath(new URL('.', import.meta.url));
 const dummyHash = await hashPassword('not-a-real-password-dummy');
 const assets = {
-  '/': 'index.html', '/index.html': 'index.html', '/app.js': 'app.js', '/accounts.js': 'accounts.js', '/google.js': 'google.js', '/features.js': 'features.js', '/styles.css': 'styles.css',
+  '/': 'index.html', '/index.html': 'index.html', '/app.js': 'app.js', '/accounts.js': 'accounts.js', '/google.js': 'google.js', '/recovery.js': 'recovery.js', '/features.js': 'features.js', '/styles.css': 'styles.css',
   '/sw.js': 'sw.js', '/manifest.webmanifest': 'manifest.webmanifest', '/icon.svg': 'icon.svg',
   '/icon-192.png': 'icon-192.png', '/icon-512.png': 'icon-512.png',
   '/assets/handari_logo.png': 'assets/handari_logo.png', '/assets/facebook_qr.png': 'assets/facebook_qr.png'
 };
-export function createApp({ dbPath = process.env.DB_PATH || join(root, 'data/handari.sqlite'), origin = process.env.APP_ORIGIN || 'http://127.0.0.1:3100', googleClientId = process.env.GOOGLE_CLIENT_ID || '', verifyGoogleToken } = {}) {
+export function createApp({ dbPath = process.env.DB_PATH || join(root, 'data/handari.sqlite'), origin = process.env.APP_ORIGIN || 'http://127.0.0.1:3100', googleClientId = process.env.GOOGLE_CLIENT_ID || '', verifyGoogleToken, recoveryMailer } = {}) {
   const store = openStore(dbPath), { db } = store, rates = new Map();
   const accounts = createAccounts(store);
   const google = createGoogleAuth(store,{clientId:googleClientId,verifyToken:verifyGoogleToken});
+  const recovery=createRecovery(store,{origin,...(recoveryMailer?{mailer:recoveryMailer}:{})});
   let credentialJobs = 0;
   async function credentialWork(fn) { need(credentialJobs < 4,'Нэвтрэх үйлчилгээ ачаалалтай байна. Түр хүлээгээд дахин оролдоно уу.',503); credentialJobs++; try { return await fn(); } finally { credentialJobs--; } }
   function limit(req, purpose, max = 15, duration = 900000) {
@@ -66,6 +68,15 @@ export function createApp({ dbPath = process.env.DB_PATH || join(root, 'data/han
       if (path.startsWith('/api/')) {
         need(['GET', 'POST'].includes(req.method), 'Хүсэлтийн арга зөвшөөрөгдөөгүй.', 405);
         if (req.method === 'POST') need(req.headers.origin === origin, 'Хүсэлтийн эх үүсвэр зөвшөөрөгдөөгүй. Хаягаа шалгана уу.', 403);
+        if(path==='/api/auth/password/config'&&req.method==='GET')return reply(res,200,recovery.config());
+        if(path==='/api/auth/password/forgot'&&req.method==='POST'){
+          limit(req,'password-forgot',5,3600000);const input=await body(req);
+          return reply(res,200,await credentialWork(()=>recovery.request(input)));
+        }
+        if(path==='/api/auth/password/reset'&&req.method==='POST'){
+          limit(req,'password-reset',15);const input=await body(req);
+          const result=await credentialWork(()=>recovery.reset(input));res.setHeader('Set-Cookie',cookie('',0));return reply(res,200,result);
+        }
         if (path === '/api/auth/config' && req.method === 'GET') return reply(res,200,{google:google.config()});
         if (path === '/api/auth/google/nonce' && req.method === 'GET') {
           limit(req,'google-init',30);

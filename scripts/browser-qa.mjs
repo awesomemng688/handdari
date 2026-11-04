@@ -9,7 +9,8 @@ import assert from 'node:assert/strict';
 const root = fileURLToPath(new URL('..', import.meta.url)), qa = join(root, '.qa');
 await mkdir(qa, { recursive: true }); const profile = join(qa, 'chrome-' + Date.now()); await mkdir(profile);
 const qaPort = Number(process.env.QA_PORT || 3197);
-const app = createApp({ dbPath: ':memory:', origin: 'http://127.0.0.1:' + qaPort });
+const recoveryMails=[];
+const app = createApp({ dbPath: ':memory:', origin: 'http://127.0.0.1:' + qaPort,recoveryMailer:{enabled:true,send:async mail=>{recoveryMails.push(mail);}} });
 const password = 'qa-password-temporary-only';
 app.store.db.prepare('INSERT INTO users(id,email,name,password,role) VALUES(?,?,?,?,?)').run('qa-owner', 'qa@example.test', 'Хандарь', await hashPassword(password), 'admin');
 await new Promise(r => app.server.listen(qaPort, '127.0.0.1', r));
@@ -52,6 +53,11 @@ try {
   await evaluate("document.querySelector('#registerForm').elements.consent.checked=true;document.querySelector('#registerForm').requestSubmit()");
   await wait("document.querySelector('#registrationSuccess')?.hidden===false");await screenshot('registration');
   assert.equal(app.store.db.prepare("SELECT status FROM users WHERE email='qa-member@example.test'").get().status,'active','Signup must activate immediately');
+  await evaluate("location.hash='forgot'");await wait("!!document.querySelector('#forgotForm')");
+  await fill({email:'qa-member@example.test'},'#forgotForm');await evaluate("document.querySelector('#forgotForm').requestSubmit()");await wait("document.querySelector('#forgotForm .recovery-message')?.textContent.length>0");
+  assert.equal(recoveryMails.length,1);await evaluate('location.hash='+JSON.stringify(new URL(recoveryMails[0].url).hash));await wait("!!document.querySelector('#resetForm')");
+  await fill({password:'qa-recovered-password-long',confirmPassword:'qa-recovered-password-long'},'#resetForm');await evaluate("document.querySelector('#resetForm').requestSubmit()");await wait("document.querySelector('#resetForm button')?.hidden===true");
+  assert.equal(await evaluate('location.hash.includes("token=")'),false,'Consumed recovery token should leave browser URL');await screenshot('password-recovery');
   await navigate('login');
   await fill({ email: 'qa@example.test', password }, '#loginForm'); await evaluate("document.querySelector('#loginForm').requestSubmit()");
   await wait("document.querySelector('#accountLabel')?.textContent==='Хандарь' && document.querySelector('.stat-value')?.textContent!=='—'");
@@ -107,7 +113,7 @@ try {
   await fill({current:password,password:'new-qa-temporary-password'});await submit();await wait("!!document.querySelector('#loginForm')");
   await fill({email:'qa-temporary@example.test',password:'new-qa-temporary-password'},'#loginForm');await evaluate("document.querySelector('#loginForm').requestSubmit()");await wait("document.querySelector('#accountLabel')?.textContent==='QA анхны нууц үг' && !!document.querySelector('.member-links')");
   await click('[data-action=logout]');await wait("!!document.querySelector('#loginForm')");
-  await fill({email:'qa-member@example.test',password},'#loginForm');await evaluate("document.querySelector('#loginForm').requestSubmit()");await wait("document.querySelector('#accountLabel')?.textContent==='Шинэ гишүүн' && !!document.querySelector('.member-links')");
+  await fill({email:'qa-member@example.test',password:'qa-recovered-password-long'},'#loginForm');await evaluate("document.querySelector('#loginForm').requestSubmit()");await wait("document.querySelector('#accountLabel')?.textContent==='Шинэ гишүүн' && !!document.querySelector('.member-links')");
   assert.equal(await evaluate("!!document.querySelector('#nav a[href=\"#admin\"]')"),false);
   await navigate('memberCatalog');await wait("document.querySelector('.product-image img')?.naturalWidth>0");await screenshot('member-catalog');
   await navigate('memberHistory');assert.ok((await evaluate('document.querySelector("#content").textContent')).includes('QA бүтээгдэхүүн'));await screenshot('member-history');
@@ -116,7 +122,7 @@ try {
   await click('[data-action=logout]');await wait("!!document.querySelector('#loginForm')");
   assert.equal(await evaluate("!!document.querySelector('.google-disabled:disabled')"),true,'Unconfigured Google button must not promise working sign-in');
   assert.deepEqual(exceptions, []);
-  console.log('Browser QA PASS: registration/approval/member account, admin users/create/policy, required password change, member-only catalog/history, previous business flows, mobile pages; no runtime exceptions. Screenshots in .qa/');
+  console.log('Browser QA PASS: email password recovery, direct registration/member account, admin users/create/policy, required password change, member-only catalog/history, previous business flows, mobile pages; no runtime exceptions. Screenshots in .qa/');
 } finally {
   socket?.close(); chrome.kill(); app.server.closeAllConnections(); await new Promise(r => app.server.close(r)); app.store.db.close();
 }

@@ -1,6 +1,7 @@
 import { createFeatures } from './features.js';
 import { createAccountUI } from './accounts.js';
 import { createGoogleUI } from './google.js';
+import { createRecoveryUI } from './recovery.js';
 const $ = selector => document.querySelector(selector);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const money = value => value === null ? '—' : new Intl.NumberFormat('mn-MN', { maximumFractionDigits: 0 }).format(value) + ' ₮';
@@ -37,7 +38,7 @@ const actionLabels = { friend: 'Найз бүртгэсэн / зассан', pro
 const blank = () => ({ friends: [], products: [], sales: [], inventoryMovements: [], expenses: [], audit: [], legacySales: [], payments: [], orders: [], notifications: [], settings: [] });
 let user = null, data = blank(), loaded = false, loading = false, error = '', generation = 0, booting = true;
 let search = '', category = '', friendView = 'list', period = 'month', fromDate = '', toDate = '', working = false, saveForm = null;
-const page = () => location.hash.slice(1) || 'home';
+const page = () => location.hash.slice(1).split('?')[0] || 'home';
 const ready = () => user?.role === 'admin' && loaded;
 const activeSales = () => data.sales.filter(s => s.status === 'confirmed');
 const action = (kind, label, style = '', symbol = 'plus') => `<button class="button ${style}" data-action="${kind}">${icon(symbol)}${label}</button>`;
@@ -164,12 +165,12 @@ function baseSettings() {
 }
 function settings() { return user && (user.role!=='admin'||user.mustChangePassword) ? accountUI.memberHome() : baseSettings() + `<div class="section-space">${feature.backupStatus()}</div>`; }
 function login() {
-  return `<section class="login-layout"><span class="eyebrow">ТАВТАЙ МОРИЛ · HANDARI BRAND</span><h2>HANDARI</h2><p class="subtitle">Бизнесийнхээ удирдлагыг нэг дороос.</p><form id="loginForm"><label class="field"><span>Имэйл хаяг</span><input name="email" type="email" autocomplete="username" maxlength="254" required placeholder="Имэйл хаягаа оруулна уу"></label><label class="field"><span>Нууц үг</span><input name="password" type="password" autocomplete="current-password" maxlength="256" required placeholder="Нууц үгээ оруулна уу"></label><p id="loginError" class="error" role="alert"></p><button class="button">Нэвтрэх →</button></form><p class="registration-login">Бүртгэлгүй юу? <a href="#register">Шинээр бүртгүүлэх →</a></p><small>Нууц үгээ мартсан бол админтай холбогдоно уу. Шинэ бүртгэл админы зөвшөөрлөөр идэвхжинэ.</small></section>`;
+  return `<section class="login-layout"><span class="eyebrow">ТАВТАЙ МОРИЛ · HANDARI BRAND</span><h2>HANDARI</h2><p class="subtitle">Бизнесийнхээ удирдлагыг нэг дороос.</p><form id="loginForm"><label class="field"><span>Имэйл хаяг</span><input name="email" type="email" autocomplete="username" maxlength="254" required placeholder="Имэйл хаягаа оруулна уу"></label><label class="field"><span>Нууц үг</span><input name="password" type="password" autocomplete="current-password" maxlength="256" required placeholder="Нууц үгээ оруулна уу"></label><p id="loginError" class="error" role="alert"></p><button class="button">Нэвтрэх →</button></form><p class="registration-login">Бүртгэлгүй юу? <a href="#register">Шинээр бүртгүүлэх →</a></p><p><a href="#forgot">Нууц үгээ мартсан уу?</a></p><small>Шинэ бүртгэлээр шууд нэвтрэх боломжтой.</small></section>`;
 }
 function render() {
   if (booting) return;
   const current = page();
-  $('#crumb').textContent = menus.find(m => m[0] === current)?.[1] || ({history:'Худалдан авалтын түүх',register:'Бүртгүүлэх',member:'Миний HANDARI',memberCatalog:'Каталог',memberHistory:'Миний худалдан авалт'}[current] || 'Нэвтрэх');
+  $('#crumb').textContent = menus.find(m => m[0] === current)?.[1] || ({forgot:'Нууц үг сэргээх',reset:'Шинэ нууц үг',history:'Худалдан авалтын түүх',register:'Бүртгүүлэх',member:'Миний HANDARI',memberCatalog:'Каталог',memberHistory:'Миний худалдан авалт'}[current] || 'Нэвтрэх');
   const visibleMenus=user?.role==='admin'?menus:user?[['home','Миний HANDARI'],['memberCatalog','Каталог'],['memberHistory','Миний худалдан авалт'],['facebook','Facebook & QR'],['settings','Миний булан']]:[['home','Нүүр'],['login','Нэвтрэх'],['register','Бүртгүүлэх'],['facebook','Facebook & QR']];
   $('#nav').innerHTML = visibleMenus.map(([id, label]) => `<a href="#${id}" ${current === id ? 'class="active" aria-current="page"' : ''}>${icon(id)}${label}</a>`).join('');
   const bottom=user?.role==='admin'?['home','friends','products','sales','settings']:user?['home','memberCatalog','memberHistory','settings']:['home','login','register','facebook'];
@@ -181,8 +182,8 @@ function render() {
   if (loading) notice += '<div class="notice neutral" role="status">Мэдээлэл ачаалж байна…</div>';
   if (error) notice += `<div class="notice" role="alert">${esc(error)}${action('refresh', 'Дахин ачаалах', 'secondary small', 'arrow')}</div>`;
   if (unread && current !== 'notifications') notice += `<div class="notice"><span>${unread} бүтээгдэхүүний нөөц анхааруулах хэмжээнд хүрсэн байна.</span><a class="button secondary small" href="#notifications">Мэдэгдэл харах</a></div>`;
-  const pages = { home, friends, products, sales, inventory, reports, facebook, settings, login, ...feature.pages, ...accountUI.pages };
-  const memberAllowed=['home','member','memberCatalog','memberHistory','settings','facebook'];
+  const pages = { forgot: recoveryUI.forgot, reset: recoveryUI.reset, home, friends, products, sales, inventory, reports, facebook, settings, login, ...feature.pages, ...accountUI.pages };
+  const memberAllowed=['home','member','memberCatalog','memberHistory','settings','facebook','forgot','reset'];
   const renderPage=user?.mustChangePassword || (user && user.role!=='admin'&&!memberAllowed.includes(current)) ? accountUI.memberHome : (pages[current] || home);
   $('#content').innerHTML = notice + renderPage();
   for (const bar of document.querySelectorAll('[data-height]')) bar.style.height = bar.dataset.height + '%';
@@ -285,6 +286,7 @@ const actions = {
 };
 const feature = createFeatures({ $, esc, money, count, day, sum, icon, action, heading, panel, table, empty, field, openForm, saveAction, api, toast, requireAdmin, csv, actions, stat, ready, render, refresh, getData: () => data });
 const accountUI = createAccountUI({$,esc,money,day,count,sum,heading,panel,table,empty,stat,field,openForm,api,toast,actions,render,refresh,requireAdmin,ready,getData:()=>data,getUser:()=>user,setUser:value=>user=value});
+const recoveryUI=createRecoveryUI({$,api,esc});
 const googleUI=createGoogleUI({$,api,toast,render,openForm,field,refresh,getUser:()=>user,onUser:value=>{generation++;user=value;data=blank();accountUI.reset();loaded=false;location.hash='home';}});
 function clearSession() { generation++; user = null; data = blank(); accountUI.reset(); loaded = false; loading = false; error = ''; location.hash = 'login'; render(); }
 document.addEventListener('click', async event => {
