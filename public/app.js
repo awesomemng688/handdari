@@ -10,6 +10,8 @@ const day = (date = new Date()) => new Intl.DateTimeFormat('sv-SE', { timeZone: 
 const sum = (rows, key) => rows.reduce((total, row) => total + Number(row[key] || 0), 0);
 const paths = {
   home: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  moon: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',
+  sun: '<circle cx="12" cy="12" r="5"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>',
   friends: '<circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M17 4a3 3 0 0 1 0 6M18 14a5 5 0 0 1 3 5v2"/>',
   products: '<path d="m12 2 9 5v10l-9 5-9-5V7l9-5Zm0 10L3 7m9 5 9-5m-9 5v10M7 4.8l9 5"/>',
   sales: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h3M15 15h1"/>',
@@ -170,12 +172,31 @@ function login() {
 function render() {
   if (booting) return;
   const current = page();
+  const isAuth = ['login', 'register', 'forgot', 'reset'].includes(current);
+  $('#sidebar').hidden = isAuth; $('header').hidden = isAuth;
+  $('.main-shell').style.marginLeft = isAuth ? '0' : '';
+  $('.main-shell').style.width = isAuth ? '100%' : '';
   $('#crumb').textContent = menus.find(m => m[0] === current)?.[1] || ({forgot:'Нууц үг сэргээх',reset:'Шинэ нууц үг',history:'Худалдан авалтын түүх',register:'Бүртгүүлэх',member:'Миний HANDARI',memberCatalog:'Каталог',memberHistory:'Миний худалдан авалт'}[current] || 'Нэвтрэх');
   const visibleMenus=user?.role==='admin'?menus:user?[['home','Миний HANDARI'],['memberCatalog','Каталог'],['memberHistory','Миний худалдан авалт'],['facebook','Facebook & QR'],['settings','Миний булан']]:[['home','Нүүр'],['login','Нэвтрэх'],['register','Бүртгүүлэх'],['facebook','Facebook & QR']];
   $('#nav').innerHTML = visibleMenus.map(([id, label]) => `<a href="#${id}" ${current === id ? 'class="active" aria-current="page"' : ''}>${icon(id)}${label}</a>`).join('');
   const bottom=user?.role==='admin'?['home','friends','products','sales','settings']:user?['home','memberCatalog','memberHistory','settings']:['home','login','register','facebook'];
   $('#bottomNav').innerHTML = bottom.map(id => `<a href="#${id}" ${current === id ? 'class="active" aria-current="page"' : ''}>${icon(id)}${{ home: 'Нүүр', friends: 'Найзууд', products: 'Бараа', sales: 'Борлуулалт', settings: 'Миний булан',memberCatalog:'Каталог',memberHistory:'Миний түүх',login:'Нэвтрэх',register:'Бүртгүүлэх',facebook:'Facebook' }[id]}</a>`).join('');
   $('#accountLabel').textContent = user?.name || 'Нэвтрэх';
+  const theme = localStorage.getItem('handari-theme') || 'light';
+  document.documentElement.dataset.theme = theme;
+  const themeIcon = theme === 'dark' ? 'sun' : 'moon';
+  if ($('.header-actions') && !$('#themeToggle')) {
+    const themeBtn = document.createElement('button');
+    themeBtn.id = 'themeToggle'; themeBtn.className = 'icon-button';
+    themeBtn.setAttribute('aria-label', 'Горим солих');
+    themeBtn.innerHTML = icon(themeIcon);
+    $('#reload').before(themeBtn);
+    themeBtn.onclick = () => {
+      const newTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('handari-theme', newTheme);
+      render();
+    };
+  } else if ($('#themeToggle')) $('#themeToggle').innerHTML = icon(themeIcon);
   const unread = ready() ? data.notifications.filter(n => !n.readAt && !n.resolvedAt).length : 0;
   $('#notificationCount').textContent = unread; $('#notificationCount').hidden = !unread;
   let notice = !user && current !== 'login' ? `<div class="notice neutral"><span>Өгөгдлөө харах, бүртгэл хийхийн тулд нэвтэрнэ үү. Үзүүлэлтүүд хараахан ачаалагдаагүй байна.</span>${action('login', 'Нэвтрэх', 'secondary small', 'arrow')}</div>` : '';
