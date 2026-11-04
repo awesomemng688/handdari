@@ -1,0 +1,20 @@
+name: Auto-deploy
+on:
+  push:
+    branches: [main]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to Ubuntu
+        uses: appleboy/ssh-action@v1
+        with:
+          host: 203.34.37.57
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/handari
+            git pull origin main
+            npm install --production
+            sudo systemctl restart handari
