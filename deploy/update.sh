@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 set -euo pipefail
-exec bash "$(dirname -- "${BASH_SOURCE[0]}")/update-v1.5.sh" "$@"
+exec bash "$(dirname -- "${BASH_SOURCE[0]}")/update-v1.6.sh" "$@"

@@ -3,6 +3,7 @@ import { runDailyBackup } from '../lib/backup.mjs';
 const root = new URL('../', import.meta.url);
 try {
   const result = await runDailyBackup({
+    driver:process.env.DB_DRIVER||'sqlite',
     source: process.env.DB_PATH || fileURLToPath(new URL('data/handari.sqlite', root)),
     directory: process.env.BACKUP_DIRECTORY || fileURLToPath(new URL('backups', root)),
     keyFile: process.env.BACKUP_ENCRYPTION_KEY_FILE || fileURLToPath(new URL('data/backup.key', root)),

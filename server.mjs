@@ -16,8 +16,8 @@ const assets = {
   '/icon-192.png': 'icon-192.png', '/icon-512.png': 'icon-512.png',
   '/assets/handari_logo.png': 'assets/handari_logo.png', '/assets/facebook_qr.png': 'assets/facebook_qr.png'
 };
-export function createApp({ dbPath = process.env.DB_PATH || join(root, 'data/handari.sqlite'), origin = process.env.APP_ORIGIN || 'http://127.0.0.1:3100', googleClientId = process.env.GOOGLE_CLIENT_ID || '', verifyGoogleToken, recoveryMailer } = {}) {
-  const store = openStore(dbPath), { db } = store, rates = new Map();
+export function createApp({ dbPath = process.env.DB_PATH || join(root, 'data/handari.sqlite'), origin = process.env.APP_ORIGIN || 'http://127.0.0.1:3100', googleClientId = process.env.GOOGLE_CLIENT_ID || '', verifyGoogleToken, recoveryMailer, databaseOptions = {} } = {}) {
+  const store = openStore(dbPath,databaseOptions), { db } = store, rates = new Map();
   const accounts = createAccounts(store);
   const google = createGoogleAuth(store,{clientId:googleClientId,verifyToken:verifyGoogleToken});
   const recovery=createRecovery(store,{origin,...(recoveryMailer?{mailer:recoveryMailer}:{})});
@@ -145,6 +145,7 @@ export function createApp({ dbPath = process.env.DB_PATH || join(root, 'data/han
         if(path==='/api/member' && req.method==='GET') return reply(res,200,accounts.member(user));
         if(path==='/api/profile' && req.method==='POST') { const input=await body(req);need(getUser(req),'Дахин нэвтэрнэ үү.',401);return reply(res,200,accounts.profile(user.id,input)); }
         need(user.role === 'admin', 'Энэ хэсгийг зөвхөн админ үзнэ.', 403);
+        if(path==='/api/admin/database'&&req.method==='GET'){db.prepare('SELECT 1 AS ok').get();return reply(res,200,{engine:db.dialect||'sqlite',connected:true,schemaVersion:db.prepare('PRAGMA user_version').get().user_version});}
         if(path==='/api/admin/users' && req.method==='GET')return reply(res,200,accounts.list(user.id));
         if(path.startsWith('/api/admin/') && req.method==='POST') {
           const input=await body(req);need(getUser(req),'Дахин нэвтэрнэ үү.',401);
