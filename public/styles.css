@@ -1,4 +1,4 @@
-:root{--purple:#5b316c;--deep:#3c2546;--gold:#b68d50;--ink:#302a35;--muted:#968a9b;--line:#eee8f0;--bg:#faf8fb;--green:#49816a;--red:#b05a67;--serif:'Noto Serif Mongolian','Georgia',serif;--sans:'Noto Sans','Segoe UI',sans-serif}
+:root{--purple:#5b316c;--deep:#3c2546;--gold:#b68d50;--ink:#302a35;--muted:#968a9b;--line:#eee8f0;--bg:#faf8fb;--green:#49816a;--red:#b05a67;--serif:'Noto Serif Mongolian','Georgia','Times New Roman',serif;--sans:'Noto Sans','Segoe UI','Microsoft YaHei',sans-serif}
 [data-theme='dark']{--purple:#d1b3e0;--deep:#f0e8f5;--gold:#d2ba8b;--ink:#e0e0e0;--muted:#a08fa9;--line:#333;--bg:#1a1a1a;--green:#6fa586;--red:#ae5665}
 [data-theme='dark'] body{background:var(--bg);color:var(--ink)}
 [data-theme='dark'] aside, [data-theme='dark'] header, [data-theme='dark'] .panel, [data-theme='dark'] .stat, [data-theme='dark'] .login-layout{background:#252525;border-color:var(--line)}
