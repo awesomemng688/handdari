@@ -120,7 +120,7 @@ function products() {
   const rows = data.products.filter(p => (p.name + ' ' + p.code).toLowerCase().includes(search.toLowerCase()) && (!category || p.category === category));
   return heading('Бүтээгдэхүүний каталог', 'Бодит мэдээлэл. Тодорхой үнэ. Эмх цэгцтэй нөөц.', action('product', 'Бүтээгдэхүүн')) +
     `<div class="toolbar"><input id="search" aria-label="Бүтээгдэхүүн хайх" placeholder="Нэр, барааны кодоор хайх…" value="${esc(search)}"><select id="category" aria-label="Ангилал"><option value="">Бүх ангилал</option>${categories.map(c => `<option ${c === category ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div>` +
-    (rows.length ? `<div class="product-grid">${rows.map(p => `<article class="product-card"><div class="product-image">${p.image ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy" referrerpolicy="no-referrer">` : '◇'}</div><span class="badge">${esc(p.category)}</span><h3>${esc(p.name)}</h3><p>${esc(p.description)}</p><p>Код: ${esc(p.code)} · ${p.status === 'active' ? 'Идэвхтэй' : 'Архивласан'}</p><div class="product-bottom"><strong>${money(p.price)}</strong><span class="badge ${p.stock <= p.threshold ? 'red' : 'green'}">${p.stock} ш үлдсэн</span></div><div class="product-bottom"><small>Өртөг: ${money(p.cost)}</small><button class="button secondary small" data-edit-product="${p.id}">Засах</button></div></article>`).join('')}</div>` : `<section class="panel">${empty(ready() ? 'Бүтээгдэхүүний бодит мэдээллээ нэмээрэй. Каталог хоосон байна.' : 'Каталог үзэхийн тулд нэвтэрнэ үү.')}</section>`);
+    (rows.length ? `<div class="product-grid">${rows.map(p => `<article class="product-card"><div class="product-image">${p.image ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy" referrerpolicy="no-referrer">` : '◇'}</div><span class="badge">${esc(p.category)}</span><h3>${esc(p.name)}</h3><p>${esc(p.description)}</p><p>Код: ${esc(p.code)} · ${p.status === 'active' ? 'Идэвхтэй' : 'Архивласан'}</p><div class="product-bottom"><strong>${money(p.price)}</strong><span class="badge ${p.stock <= p.threshold ? 'red' : 'green'}">${p.stock} ш үлдсэн</span></div><div class="product-bottom"><small>Өртөг: ${money(p.cost)}</small><button class="button secondary small" data-edit-product="${p.id}">Засах</button><button class="button ghost small" data-delete-product="${p.id}">Устгах</button></div></article>`).join('')}</div>` : `<section class="panel">${empty(ready() ? 'Бүтээгдэхүүний бодит мэдээллээ нэмээрэй. Каталог хоосон байна.' : 'Каталог үзэхийн тулд нэвтэрнэ үү.')}</section>`);
 }
 function sales() {
   return heading('Борлуулалтын бүртгэл', 'Борлуулалт бүртгэхэд барааны үлдэгдэл автоматаар хасагдана.', action('sale', 'Борлуулалт')) +
@@ -312,7 +312,7 @@ const recoveryUI=createRecoveryUI({$,api,onReset:()=>{generation++;user=null;dat
 const googleUI=createGoogleUI({$,api,toast,render,openForm,field,refresh,getUser:()=>user,onUser:value=>{generation++;user=value;data=blank();accountUI.reset();loaded=false;location.hash='home';}});
 function clearSession() { generation++; user = null; data = blank(); accountUI.reset(); loaded = false; loading = false; error = ''; location.hash = 'login'; render(); }
 document.addEventListener('click', async event => {
-  const target = event.target.closest('[data-action],[data-edit-friend],[data-delete-friend],[data-edit-product],[data-cancel-sale],[data-mode]');
+  const target = event.target.closest('[data-action],[data-edit-friend],[data-delete-friend],[data-edit-product],[data-delete-product],[data-cancel-sale],[data-mode]');
   if (!target || working) return;
   try {
     if (target.dataset.mode) { friendView = target.dataset.mode; render(); return; }
@@ -323,6 +323,11 @@ document.addEventListener('click', async event => {
     if (target.dataset.deleteFriend) {
       const f = data.friends.find(f => f.id === target.dataset.deleteFriend);
       openForm('Найзын бүртгэл устгах', [], b => saveAction('deleteFriend', { ...b, id: f.id }), `${f.surname} ${f.name} найзын бүртгэлийг устгах уу? Энэ үйлдлийг буцаах боломжгүй.`);
+      $('#save').textContent = 'Устгах';
+    }
+    if (target.dataset.deleteProduct) {
+      const p = data.products.find(p => p.id === target.dataset.deleteProduct);
+      openForm('Бүтээгдэхүүн устгах', [], b => saveAction('deleteProduct', { ...b, id: p.id }), `${p.name} (${p.code}) бүтээгдэхүүнийг устгах уу? Борлуулалт, захиалга, барааны хөдөлгөөний түүхтэй бол архивлана уу.`);
       $('#save').textContent = 'Устгах';
     }
     if (target.dataset.cancelSale) openForm('Борлуулалт цуцлах', [field('note', 'Цуцлах шалтгаан', 'textarea', '', null, true, true)], b => saveAction('cancelSale', { ...b, id: target.dataset.cancelSale }), 'Бараа нөөцөд буцаж нэмэгдэнэ. Цуцлагдсан дүн тайлангаас хасагдана. Мөнгө автоматаар буцахгүй; төлсөн дүн байвал дараа нь «Төлбөр буцаах» үйлдлээр бодит буцаалтыг бүртгэнэ.');
