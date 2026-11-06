@@ -1,0 +1,3 @@
+Copy-Item -Path "C:\Users\Awesome\Desktop\HANDARI_v1.0\public\assets\handarilogo.png" -Destination "C:\Users\Awesome\Desktop\HANDARI_v1.0\public\assets\handari_logo.png" -Force
+Copy-Item -Path "C:\Users\Awesome\Desktop\HANDARI_v1.0\public\handdariicon.jpg" -Destination "C:\Users\Awesome\Desktop\HANDARI_v1.0\public\icon.png" -Force
+Get-ChildItem "C:\Users\Awesome\Desktop\HANDARI_v1.0\public\assets\handari_logo.png", "C:\Users\Awesome\Desktop\HANDARI_v1.0\public\icon.png" | Select-Object Name, Length
